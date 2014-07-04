@@ -29,7 +29,7 @@ bool checkResults(int *result, int *expected, int length)
 }
 
 template<int WARPSIZE>
-__device__ int getTrueIndex(int i)
+__device__ int getTrueId(int i)
 {
 	return (i/WARPSIZE) * (WARPSIZE+1) + (i % WARPSIZE);
 }
@@ -41,11 +41,11 @@ __device__ int getTrueSize(int size)
 
 template
 <int WARPSIZE>
-__global__ void blellochP1(int *input, int *output)
+__global__ void blelloch(int *input, int *output)
 {
 	int offset = blockDim.x * blockIdx.x;
 	int realSize = getTrueSize<WARPSIZE>(blockDim.x);
-	__shared__ table[realSize];
+	__shared__ int table[realSize];
 	table[getTrueIndex<WARPSIZE>(threadIdx.x)] = input[offset + threadIdx.x];
 	__syncthreads();
 
@@ -107,7 +107,7 @@ template
 int BLOCKSIZE,
 int WARPSIZE
 >
-int checkKernel(int *input, int *output, int *dev_input, int *dev_output) {
+int checkKernel(int *input, int *output, int *dev_input, int *dev_output, int *expected) {
 	cudaMemcpy(dev_input, input, sizeof(int) * size, cudaMemcpyHostToDevice);
 
 	blelloch<WARPSIZE>
@@ -115,11 +115,12 @@ int checkKernel(int *input, int *output, int *dev_input, int *dev_output) {
 
 	cudaMemcpy(output, dev_output, sizeof(int) * size, cudaMemcpyDeviceToHost);
 
-	if (checkResults(output, expected, size) {
+	if (checkResults(output, expected, size)) {
 		printf("wszystko ok\n");
 	} else {
 		printf("blad\n");
 	}
+	return 0;
 }
 
 
@@ -137,6 +138,10 @@ int main() {
 	cudaMallocHost(&expected, sizeof(int) * size);
 
 	genData(input, size);
+
+	cpuScan(input, expeceted, size);
+
+	checkKernel<size, blockSize, 32>(input, output, dev_input, dev_output, expected);
 
 	cudaFree(input);
 	cudaFree(output);
