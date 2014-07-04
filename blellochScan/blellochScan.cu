@@ -111,7 +111,7 @@ int checkKernel(int *input, int *output, int *dev_input, int *dev_output, int *e
 	cudaMemcpy(dev_input, input, sizeof(int) * size, cudaMemcpyHostToDevice);
 
 	blelloch<WARPSIZE>
-		<<<SIZE/BLOCKSIZE, BLOCKSIZE>>>(SIZE, dev_input, dev_output);
+		<<<1, SIZE>>>(dev_input, dev_output);
 
 	cudaMemcpy(output, dev_output, sizeof(int) * size, cudaMemcpyDeviceToHost);
 
